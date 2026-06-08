@@ -23,6 +23,7 @@ npm run start    # node dist/init.js (build 이후 실행)
 - **엔트리**: [src/init.js](src/init.js)는 HTTP 리스너를 열기 **이전에** LRU 캐시(`refreshCacheServerMaster`, `refreshCacheLocalizedText`, `refreshCacheFixedData`, `refreshCachePackageEvent`)를 모두 로딩한다. 기준정보 캐시에 의존하는 모든 코드는 캐시가 warm 상태임을 전제로 작성됨.
 - **HTTPS 토글**: `process.env.HTTPS > 0`이면 `./cert/{ca-chain-bundle.pem,key.pem,crt.pem}`로 HTTPS 구동. PORT 기본값은 7606.
 - **캐시**: `init.js`에서 export하는 모듈 레벨 `cache = new LRU(...)`를 컨트롤러들이 전역 key-value 스토어처럼 공유한다. 실제로는 LRU로 동작하지 않음 — 부팅 시 한 번 로딩하고 계속 사용하며 `dispose`는 no-op. 재로딩은 `loadingRegularCacheData()`를 통해서만.
+- **캐시 자동 갱신**: [src/com/cacheLoader.js](src/com/cacheLoader.js)의 `schedule.scheduleJob("*/20 * * * *")`가 **20분마다** `loadingRegularCacheData()`를 호출(env 게이트 없이 항상 동작) → `refreshCacheServerMaster`/`refreshCachePackageEvent` 갱신. 공지(`com_notice`)·서버마스터 등 DB 직접 수정분은 재시작 없이 최대 20분 내 반영. PM2 클러스터에서는 인스턴스마다 각자 갱신.
 
 ## 요청 디스패치 패턴 (중요)
 
